@@ -45,6 +45,24 @@
 
 ---
 
+## 项目文件说明
+
+### 文件夹
+
+- **.idea/**：PyCharm 项目配置文件，包含 Python 解释器、运行配置等（建议保留在.gitignore 中，无需上传）
+- **fonts/**：字体文件目录，默认包含 NotoSerifSC-VariableFont_wght.ttf（Noto Serif SC 可变字体）。添加其他字体文件到该目录，可获得更多字体效果
+- **html/**：前端界面目录，包含主界面"中二病也要造汉字.html"，采用 Fabric.js 实现交互式画布，支持部件拖拽、缩放、旋转等操作
+- **output_svg/**：SVG 输出目录，存放通过 export_svg.py 生成的高精度 SVG 文件，用于 Inkscape 或 Illustrator 进行精准切割
+
+### Python 脚本
+
+- **export_char_to_svg.py**：单独或批量获取汉字的高精度 path 数据，输出到 radicals.json
+- **export_svg.py**：单独或批量生成汉字的 SVG 文件，输出到 output_svg 文件夹，用于 Inkscape 或 Illustrator 切割
+- **manual_add_radical.py**：将从 Inkscape 或 Illustrator 得到的切割路径命名为新的部件，并添加到 radicals.json
+- **extract_radical.py** 和 **clean_radical.py**：实验阶段功能，尝试自动化切割及清理路径，但目前效果不佳，建议优先使用手动切割流程
+
+---
+
 ## 快速开始
 
 ### 环境要求
