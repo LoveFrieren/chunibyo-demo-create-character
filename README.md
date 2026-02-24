@@ -49,7 +49,6 @@
 
 ### 文件夹
 
-- **.idea/**：PyCharm 项目配置文件，包含 Python 解释器、运行配置等（建议保留在.gitignore 中，无需上传）
 - **fonts/**：字体文件目录，默认包含 NotoSerifSC-VariableFont_wght.ttf（Noto Serif SC 可变字体）。添加其他字体文件到该目录，可获得更多字体效果
 - **html/**：前端界面目录，包含主界面"中二病也要造汉字.html"，采用 Fabric.js 实现交互式画布，支持部件拖拽、缩放、旋转等操作
 - **output_svg/**：SVG 输出目录，存放通过 export_svg.py 生成的高精度 SVG 文件，用于 Inkscape 或 Illustrator 进行精准切割
