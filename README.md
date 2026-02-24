@@ -1,6 +1,6 @@
 # 中二病也要造汉字
 
-> 交互式汉字部件拼接工具 | 支持手动切割和自动化提取
+> 中二病也要造汉字 | 交互式汉字部件拼接工具
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python](https://img.shields.io/badge/Python-3.8+-green.svg)](https://www.python.org/)
@@ -73,7 +73,7 @@
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/你的用户名/chunibyo-demo-create-character.git
+git clone https://github.com/LoveFrieren/chunibyo-demo-create-character.git
 cd chunibyo-demo-create-character
 
 # 2. 创建虚拟环境
