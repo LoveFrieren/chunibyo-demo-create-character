@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中二病也要造汉字</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js  "></script>
+    <style>
+        body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .workspace { display: flex; gap: 20px; background: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); flex-wrap: wrap; justify-content: center; }
+        .panel { display: flex; flex-direction: column; gap: 10px; }
+        .canvas-container { border: 1px solid #ddd; background-image: linear-gradient(45deg, #eee 25%, transparent 25%), linear-gradient(-45deg, #eee 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #eee 75%), linear-gradient(-45deg, transparent 75%, #eee 75%); background-size: 20px 20px; background-position: 0 0, 0 10px, 10px -10px, -10px 0px; }
+        .library-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-height: 400px; overflow-y: auto; padding: 10px; border: 1px solid #eee; border-radius: 6px; width: 220px; }
+        .lib-item { width: 45px; height: 45px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 24px; font-weight: bold; color: #333; transition: all 0.2s; }
+        .lib-item:hover { background: #e6f7ff; border-color: #1890ff; transform: scale(1.1); }
+        .controls { margin-top: 10px; display: flex; gap: 10px; flex-direction: column; }
+        button { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; }
+        .btn-primary { background-color: #07c160; color: white; }
+        .btn-danger { background-color: #ff4d4f; color: white; }
+        .btn-secondary { background-color: #f0f0f0; color: #333; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        h3 { margin-top: 0; font-size: 16px; color: #333; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+        .note { font-size: 12px; color: #999; line-height: 1.5; }
+        #loading { text-align: center; padding: 20px; color: #666; }
+        .error-msg { color: #ff4d4f; font-size: 14px; text-align: center; display: none; }
+        
+        .disclaimer {
+            margin-top: 20px;
+            padding: 12px 16px;
+            background-color: #fff8e6;
+            border: 1px solid #ffd591;
+            border-left: 4px solid #faad14;
+            border-radius: 4px;
+            max-width: 1100px;
+            font-size: 12px;
+            color: #666;
+            line-height: 1.6;
+            text-align: justify;
+        }
+        .disclaimer strong {
+            color: #d46b08;
+            font-weight: 600;
+        }
+        .disclaimer a {
+            color: #1890ff;
+            text-decoration: none;
+        }
+        .disclaimer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="workspace">
+        <div class="panel">
+            <h3>高精度部件库</h3>
+            <div id="loading">正在加载字形数据...</div>
+            <div class="error-msg" id="errorMsg"></div>
+            <div class="library-grid" id="libraryGrid" style="display: none;">
+
+            </div>
+            <p class="note">高精度部件数据源自 https://fonts.google.com/  <br>部件数据版权归 Google 所有，未经允许不可商用</p>
+        </div>
+
+        <div class="panel">
+            <canvas id="c" width="600" height="600"></canvas>
+        </div>
+
+        <div class="panel">
+            <h3>操作控制</h3>
+            <div class="controls">
+                <div class="slider-group">
+                    <label>大小缩放:</label>
+                    <input type="range" id="scaleSlider" min="0.1" max="1.0" step="0.05" value="0.2" disabled>
+                </div>
+                <button class="btn-danger" id="btnDelete" disabled>删除选中</button>
+                <button class="btn-secondary" id="btnClear">清空画布</button>
+                <button class="btn-primary" id="btnDownload">导出高清 PNG</button>
+            </div>
+            <p class="note" style="margin-top:20px;">
+                <strong>操作提示：</strong><br>1. 点击部件添加至画布<br>
+                2. 拖动部件进行拼接。<br>
+                3. 使用滑块调整大小。
+            </p>
+        </div>
+    </div>
+
+    <div class="disclaimer">
+        <strong>⚠️ 风险提示及免责声明</strong>：根据《中华人民共和国国家通用语言文字法》，提供社会公共服务的门户网站、移动应用程序等互联网信息平台中使用的国家通用语言文字，应当符合国家的规范和标准。本代码仅用于汉字结构的研究和学习，不可商用，也不可将得到的内容以任何形式发布到互联网或线下公共场所。使用者需自行承担因使用不当造成的任何后果，开发者不承担任何法律责任。
+    </div>
+
+    <script>
+        const canvas = new fabric.Canvas('c', {
+            backgroundColor: '#fff',
+            preserveObjectStacking: true
+        });
+
+        let radicalLibrary = {};
+
+        async function loadRadicals() {
+            const loadingEl = document.getElementById('loading');
+            const gridEl = document.getElementById('libraryGrid');
+            const errorEl = document.getElementById('errorMsg');
+
+            try {
+                const response = await fetch('../radicals.json');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP 错误！状态：${response.status}`);
+                }
+
+                const data = await response.json();
+                radicalLibrary = data;
+
+                loadingEl.style.display = 'none';
+                gridEl.style.display = 'grid';
+
+                renderLibrary(data);
+                console.log(`✓ 成功加载 ${Object.keys(data).length} 个字形`);
+
+            } catch (error) {
+                console.error('加载失败:', error);
+                loadingEl.style.display = 'none';
+                errorEl.style.display = 'block';
+                errorEl.textContent = `加载失败：${error.message}。请确保使用本地服务器运行。`;
+            }
+        }
+
+        function renderLibrary(data) {
+            const gridEl = document.getElementById('libraryGrid');
+            gridEl.innerHTML = ''; 
+
+            for (const [char, info] of Object.entries(data)) {
+                const item = document.createElement('div');
+                item.className = 'lib-item';
+                item.textContent = char;
+                item.title = `添加：${char}`;
+                item.onclick = () => addRadicalToCanvas(char, info.path, info);
+                gridEl.appendChild(item);
+            }
+        }
+
+        function addRadicalToCanvas(char, pathData, info) {
+            if (!pathData) {
+                console.warn(`缺少路径数据：${char}`);
+                return;
+            }
+
+            const scaleY = (info && info.scaleY) ? info.scaleY : -0.2;
+
+            const path = new fabric.Path(pathData, {
+                left: 300,
+                top: 300,
+                fill: '#000000',
+                originX: 'center',
+                originY: 'bottom',
+                scaleX: 0.2, 
+                scaleY: scaleY,
+                stroke: null,
+                strokeWidth: 0
+            });
+
+            canvas.add(path);
+            canvas.setActiveObject(path);
+            updateControls();
+        }
+
+        function updateControls() {
+            const activeObj = canvas.getActiveObject();
+            const hasSelection = !!activeObj;
+            document.getElementById('scaleSlider').disabled = !hasSelection;
+            document.getElementById('btnDelete').disabled = !hasSelection;
+            if (hasSelection) {
+                document.getElementById('scaleSlider').value = Math.abs(activeObj.scaleX);
+            }
+        }
+
+        canvas.on('selection:created', updateControls);
+        canvas.on('selection:updated', updateControls);
+        canvas.on('selection:cleared', updateControls);
+
+        document.getElementById('scaleSlider').addEventListener('input', function(e) {
+            const activeObj = canvas.getActiveObject();
+            if (activeObj) {
+                const scale = parseFloat(e.target.value);
+                activeObj.set({
+                    scaleX: scale,
+                    scaleY: -scale
+                });
+                canvas.requestRenderAll();
+            }
+        });
+
+        document.getElementById('btnDelete').addEventListener('click', function() {
+            const activeObj = canvas.getActiveObject();
+            if (activeObj) {
+                canvas.remove(activeObj);
+                canvas.discardActiveObject();
+                canvas.requestRenderAll();
+                updateControls();
+            }
+        });
+
+        document.getElementById('btnClear').addEventListener('click', function() {
+            canvas.clear();
+            canvas.setBackgroundColor('#fff', canvas.renderAll.bind(canvas));
+            updateControls();
+        });
+
+        document.getElementById('btnDownload').addEventListener('click', function() {
+            canvas.discardActiveObject();
+            canvas.requestRenderAll();
+            const dataURL = canvas.toDataURL({
+                format: 'png',
+                quality: 1,
+                multiplier: 2
+            });
+            const link = document.createElement('a');
+            link.download = 'character.png';
+            link.href = dataURL;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        window.addEventListener('DOMContentLoaded', loadRadicals);
+    </script>
+</body>
+</html>
